@@ -1,13 +1,54 @@
 (() => {
   const $ = id => document.getElementById(id);
 
-  // initial config
-  let SERVER_BASE = (localStorage.getItem('ap_server') || 'http://172.16.5.22:3000').replace(/\/$/, '');
+  // ==========================
+  // Dynamic backend resolver
+  // ==========================
+  function detectServerBase() {
+    const stored = localStorage.getItem('ap_server');
+    if (stored && stored.trim() !== '') {
+      console.log('🌐 Using custom server from localStorage:', stored);
+      return stored.replace(/\/$/, '');
+    }
+
+    const host = window.location.hostname;
+    if (host.includes('github.io')) {
+      // GitHub Pages → use LAN backend
+      return 'http://172.16.5.22:3000';
+    }
+    if (host === 'localhost' || host === '127.0.0.1') {
+      // Local development → local backend
+      return 'http://localhost:3000';
+    }
+    return 'http://172.16.5.22:3000';
+  }
+
+  // ==========================
+  // Initial config
+  // ==========================
+  let SERVER_BASE = detectServerBase().replace(/\/$/, '');
   let ADMIN_TOKEN = localStorage.getItem('ap_token') || 'secret123';
 
   $('serverBase').value = SERVER_BASE;
   $('adminToken').value = ADMIN_TOKEN;
 
+  // Quick reachability test
+  (async () => {
+    try {
+      const res = await fetch(SERVER_BASE + '/api/health');
+      if (res.ok) {
+        console.log('✅ Backend reachable at', SERVER_BASE);
+      } else {
+        console.warn('⚠️ Backend responded with', res.status);
+      }
+    } catch (e) {
+      console.error('❌ Backend not reachable:', SERVER_BASE);
+    }
+  })();
+
+  // ==========================
+  // Helpers
+  // ==========================
   function headers() {
     return { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN };
   }
@@ -26,7 +67,9 @@
     return res.json();
   }
 
-  // Render all users in table
+  // ==========================
+  // Render user table
+  // ==========================
   function renderUsers(users) {
     const tbody = $('usersTbody');
     tbody.innerHTML = '';
@@ -43,7 +86,6 @@
         <td><strong>${u.enrollment_number}</strong></td>
         <td>${u.username || '-'}</td>
         <td>${u.email || '-'}</td>
-       
         <td>${u.active_session_id ? `<span class="status">${u.active_session_id}</span>` : '<span class="muted">Inactive</span>'}</td>
         <td class="actions">
           <button data-id="${u.enrollment_number}" class="viewBtn secondary">View</button>
@@ -56,7 +98,9 @@
     setStatusCount(users.length);
   }
 
-  // Load all users from backend
+  // ==========================
+  // Fetch + actions
+  // ==========================
   async function loadAllUsers() {
     try {
       const data = await apiFetch('/admin/users');
@@ -66,7 +110,6 @@
     }
   }
 
-  // View a specific user's logs and data
   async function viewUser(enrollment_number) {
     try {
       const data = await apiFetch(`/admin/user/${encodeURIComponent(enrollment_number)}`);
@@ -78,16 +121,13 @@
       const logs = data.logs || [];
       $('userLogs').textContent =
         logs.length > 0
-          ? logs
-              .map(l => `${l.created_at || `${l.event_date} ${l.event_time}`} — ${l.event_message}`)
-              .join('\n\n')
+          ? logs.map(l => `${l.created_at || `${l.event_date} ${l.event_time}`} — ${l.event_message}`).join('\n\n')
           : 'No logs found.';
     } catch (err) {
       alert('Failed to fetch user: ' + (err?.error || JSON.stringify(err)));
     }
   }
 
-  // Delete user from DB
   async function deleteUser(enrollment_number) {
     if (!confirm(`Delete user ${enrollment_number}? This action cannot be undone.`)) return;
     try {
@@ -100,7 +140,9 @@
     }
   }
 
-  // event delegation for action buttons
+  // ==========================
+  // Event bindings
+  // ==========================
   $('usersTable').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
@@ -109,7 +151,6 @@
     if (btn.classList.contains('delBtn')) return deleteUser(id);
   });
 
-  // search
   $('btnSearch').addEventListener('click', async () => {
     const q = $('searchInput').value.trim();
     if (!q) { alert('Enter enrollment number'); return; }
@@ -119,7 +160,6 @@
   $('btnListAll').addEventListener('click', loadAllUsers);
   $('btnFetchAll').addEventListener('click', loadAllUsers);
 
-  // Save server config
   $('btnReload').addEventListener('click', () => {
     SERVER_BASE = $('serverBase').value.replace(/\/$/, '') || SERVER_BASE;
     ADMIN_TOKEN = $('adminToken').value || ADMIN_TOKEN;
@@ -128,17 +168,17 @@
     alert('Config saved!');
   });
 
-  // detail view delete button
   $('btnDeleteUser').addEventListener('click', () => {
     const userId = $('detailTitle').textContent.replace(/^User:\s*/, '').trim();
     if (userId) deleteUser(userId);
   });
 
-  // initial load
-  loadAllUsers();
-
-  // Press Enter to search
   $('searchInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $('btnSearch').click();
   });
+
+  // ==========================
+  // Initial load
+  // ==========================
+  loadAllUsers();
 })();
