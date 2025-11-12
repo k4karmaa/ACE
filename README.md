@@ -1,2 +1,0 @@
-# ACE
-ACE Exam Proctor
