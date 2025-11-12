@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ACE Proctor — Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="" crossorigin="anonymous" />
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#0ea5b7;--muted:#9aa4b2}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#071022 0,#07182a 100%);color:#e6eef6;padding:20px}
+    .wrap{max-width:1100px;margin:0 auto}
+    h1{margin:0 0 18px;font-size:20px}
+    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,.6);margin-bottom:14px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=text], input[type=password] {width:100%;padding:10px;border-radius:8px;border:1px solid #233142;background:#071026;color:#e6eef6}
+    .row{display:flex;gap:12px;align-items:center}
+    .row .col{flex:1}
+    button{background:var(--accent);border:none;color:#052027;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#334155;color:#e6eef6}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.04);text-align:left;font-size:13px}
+    th{color:var(--muted);font-weight:600}
+    .actions button{margin-right:6px}
+    .small{font-size:13px;color:var(--muted)}
+    .status{display:inline-block;padding:6px 8px;border-radius:8px;background:#06202a;color:#a7f3d0;font-weight:600}
+    .danger{background:#3b0f0f;color:#ffd7d7}
+    .muted{color:var(--muted)}
+    .search-row{display:flex;gap:8px;margin-top:8px}
+    .logbox{white-space:pre-wrap;max-height:300px;overflow:auto;background:#071328;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.02);font-family:monospace;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ACE Proctor — Admin Panel</h1>
+
+    <div class="card" id="configCard">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="flex:1">
+          <label>Server Base URL</label>
+          <input id="serverBase" type="text" value="http://172.16.5.22:3000" />
+        </div>
+        <div style="width:260px">
+          <label>Admin token (x-admin-token)</label>
+          <input id="adminToken" type="password" value="secret123" />
+        </div>
+        <div style="width:120px;display:flex;flex-direction:column;gap:6px">
+          <label>&nbsp;</label>
+          <button id="btnReload">Apply</button>
+          <button id="btnFetchAll" class="secondary">Refresh users</button>
+        </div>
+      </div>
+      <div style="margin-top:10px" class="small">Note: Keep this page secure. The token is used in an HTTP header.</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <label>Search Users (by Enrollment Number)</label>
+          <div class="search-row">
+            <input id="searchInput" type="text" placeholder="e.g. A12343" />
+            <button id="btnSearch">Search</button>
+            <button id="btnListAll" class="secondary">List all</button>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Total users:</div>
+          <div id="userCount" class="status">--</div>
+        </div>
+      </div>
+
+      <table id="usersTable" aria-live="polite" style="margin-top:12px">
+        <thead>
+          <tr>
+            <th>Enrollment No</th>
+            <th>Username</th>
+            <th>Email</th>
+            <!-- <th>Pass Key</th> -->
+            <th>Session</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody">
+          <tr><td colspan="5" class="muted">No data — click "Refresh users"</td></tr>
+        </tbody>
+      </table>
+
+    </div>
+
+    <div class="card" id="detailCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h3 id="detailTitle">User details</h3>
+          <div class="small" id="detailId"></div>
+        </div>
+        <div>
+          <button id="btnDeleteUser" class="danger">Delete user (global)</button>
+          <button id="btnForceClear" class="secondary">Force local clear</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label>Recent logs (last 50)</label>
+          <div id="userLogs" class="logbox">No logs</div>
+        </div>
+        <div>
+          <label>User object (raw)</label>
+          <div id="userRaw" class="logbox">No user loaded</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:40px"></div>
+    <!-- <div class="small muted">Panel built for your server — run inside the same network. Hosted at <code>/admin.html</code> (public folder).</div> -->
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
